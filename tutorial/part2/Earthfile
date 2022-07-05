@@ -1,0 +1,16 @@
+VERSION 0.6
+FROM golang:1.15-alpine3.13
+WORKDIR /go-example-workdir
+
+build:
+    COPY main.go .
+    RUN go build -o build/go-example-bin main.go
+    SAVE ARTIFACT build/go-example-bin /go-example-bin-artifact AS LOCAL build/go-example-bin
+
+docker:
+    COPY +build/go-example-bin-artifact .
+    ENTRYPOINT ["/go-example-workdir/go-example-bin-artifact"]
+    SAVE IMAGE go-example:latest
+
+release:
+    RUN --push echo "Released! We can use --push to indicate extenral changes."
