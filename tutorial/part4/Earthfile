@@ -1,0 +1,38 @@
+VERSION 0.6
+FROM golang:1.15-alpine3.13
+WORKDIR /go-example
+
+deps:
+    COPY go.mod go.sum ./
+    RUN go mod download
+    # Output these back in case go mod download changes them.
+    SAVE ARTIFACT go.mod AS LOCAL go.mod
+    SAVE ARTIFACT go.sum AS LOCAL go.sum
+
+build:
+    FROM +deps
+    ARG version
+    COPY main.go .
+    RUN go build -o build/go-example-$version main.go
+    SAVE ARTIFACT build/go-example-$version /go-example AS LOCAL build/go-example
+
+docker:
+    ARG tag='latest'
+    COPY +build/go-example .
+    ENTRYPOINT ["/go-example/go-example"]
+    SAVE IMAGE go-example:$tag
+
+args:
+    ARG EARTHLY_TARGET
+    RUN echo $EARTHLY_TARGET
+    ARG USERARCH
+    RUN echo $USERARCH
+
+with-build:
+    BUILD +docker --tag='my-new-image-tag'
+
+with-from:
+    FROM +docker --tag='my-new-image-tag'
+
+with-copy:
+    COPY (+build/go-example --version='1.0') .
